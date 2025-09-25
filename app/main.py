@@ -1,20 +1,44 @@
 # app/main.py
-from fastapi import FastAPI
-from .routes import router
+
+import logging
 import uvicorn
-# ensure config imported to set up neomodel
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from neomodel import db
 from . import config
 
-app = FastAPI(title="Simple Social API - Neo4j + FastAPI")
-app.include_router(router)
+# Optional: import router
+try:
+    from .routes import router
+except ImportError as e:
+    logging.warning(f"⚠️ Could not import router: {e}")
+    router = None
 
-@app.on_event("startup")
-def startup_event():
-    # neomodel connection is configured via config.py import
-    print("App startup - Neo4j config loaded.")
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+
+# Define lifespan handler
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        db.cypher_query("RETURN 'Neo4j connection OK'")
+        logging.info("✅ Connected to Neo4j successfully.")
+    except Exception as e:
+        logging.error(f"❌ Failed to connect to Neo4j: {e}")
+    yield  # Startup complete
+    # You can add shutdown logic here if needed
+
+# Initialize FastAPI with lifespan
+app = FastAPI(title="Simple Social API - Neo4j + FastAPI", lifespan=lifespan)
+
+# Include router if available
+if router:
+    app.include_router(router)
 
 @app.get("/")
 def root():
     return {"message": "Simple Social API running."}
 
-# for direct run: uvicorn app.main:app --reload
+# For direct execution
+if __name__ == "__main__":
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
