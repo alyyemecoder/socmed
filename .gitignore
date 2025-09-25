@@ -1,0 +1,23 @@
+# python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# env/venv
+.venv/
+venv/
+env/
+
+# local config & secrets
+.env
+*.env
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# node etc if present
+node_modules/
