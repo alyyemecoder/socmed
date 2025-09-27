@@ -1,28 +1,21 @@
-# app/config.py
-
 import os
+from urllib.parse import quote_plus
+from neomodel import config as neomodel_config
 from dotenv import load_dotenv
-from neo4j import GraphDatabase
 
-# Load environment variables from .env
 load_dotenv()
 
-# Retrieve credentials
-NEO4J_URI = os.getenv("NEO4J_URI", "neo4j+s://a00e68dd.databases.neo4j.io")
-NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "LSDLXPhLwuSb7-mLdi5JEgaiVWzqKdvLeLhgPGHLpds")
+host = os.getenv("NEO4J_HOST")
+user = os.getenv("NEO4J_USER", "neo4j")
+password = os.getenv("NEO4J_PASSWORD")
 
-# Create Neo4j driver
-driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+if not host or not password:
+    raise ValueError("NEO4J_HOST or NEO4J_PASSWORD missing")
 
-# Optional: test connection
-def test_connection():
-    try:
-        with driver.session() as session:
-            result = session.run("RETURN '✅ Neo4j Aura connection successful!' AS message")
-            print(result.single()["message"])
-    except Exception as e:
-        print(f"❌ Connection failed: {e}")
+encoded_pw = quote_plus(password)
 
-# Run test on import
-test_connection()
+# Aura requires neo4j+s:// not bolt+s://
+neo4j_url = f"neo4j+s://{user}:{encoded_pw}@{host}:7687"
+
+neomodel_config.DATABASE_URL = neo4j_url
+print("[ℹ️] Connecting to Neo4j at:", neo4j_url)
